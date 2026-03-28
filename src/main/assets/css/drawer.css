@@ -1,0 +1,124 @@
+/* ===== БОКОВЫЕ ПАНЕЛИ ===== */
+.drawer-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 2000;
+    font-family: 'DS Cristal', 'Courier New', monospace;
+}
+
+/* Затемнение фона */
+.drawer-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(5px);
+    opacity: 0;
+    transition: transform 0.01s ease-out;
+    pointer-events: none;
+    z-index: 500
+}
+
+.drawer-overlay.active {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* Левая панель (история) */
+.drawer-left {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 85%;
+        max-width: 320px;
+        min-width: 240px;
+    height: 100%;
+    background: #0f172a;
+    border-right: 2px solid cyan;
+    box-shadow: 4px 0 30px rgba(0, 255, 255, 0.3);
+    transform: translateX(-100%);
+    transition: transform 0.05s cubic-bezier(0.4, 0, 0.2, 1);
+    pointer-events: auto;
+    display: flex;
+    flex-direction: column;
+    z-index: 1000;
+}
+
+.drawer-left.open {
+    transform: translateX(0);
+}
+
+/* Правая панель (статистика) */
+.drawer-right {
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: 85%;
+       max-width: 320px;
+       min-width: 240px;
+    height: 100%;
+    background: #0f172a;
+    border-left: 2px solid #10b981;
+    box-shadow: -4px 0 30px rgba(16, 185, 129, 0.3);
+    transform: translateX(100%);
+    transition: transform 0.05s cubic-bezier(0.4, 0, 0.2, 1);
+    pointer-events: auto;
+    display: flex;
+    flex-direction: column;
+    z-index: 1000;
+}
+
+.drawer-right.open {
+    transform: translateX(0);
+}
+
+/* Iframe внутри панелей */
+.drawer-frame {
+    width: 100%;
+    height: 100%;
+    border: none;
+    background: #0f172a;
+}
+
+/* Кнопки открытия */
+.drawer-toggle-btn {
+    position: fixed;
+    top: 58%;
+    width: 5%;
+    height: 20%;
+    background: rgba(0, 255, 255, 0.15);
+    border: 1px solid cyan;
+    color: cyan;
+    font-size: 16px;
+    cursor: pointer;
+    z-index: 1500;
+    backdrop-filter: blur(5px);
+    transition: 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'DS Cristal', monospace;
+}
+
+.drawer-toggle-btn:hover {
+    background: rgba(0, 255, 255, 0.3);
+    box-shadow: 0 0 20px cyan;
+}
+
+.btn-left {
+    left: 0;
+    border-radius: 0 8px 8px 0;
+    border-left: none;
+}
+
+.btn-right {
+    right: 0;
+    border-radius: 8px 0 0 8px;
+    border-right: none;
+}

@@ -1,0 +1,61 @@
+plugins {
+    alias(libs.plugins.android.application)
+}
+
+android {
+    namespace 'com.example.scanner'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "com.example.scanner"
+        minSdk 24
+        targetSdk 34
+        versionCode 1
+        versionName "1.0"
+
+        // 1. ВЫКИДЫВАЕМ ЛИШНЕЕ ЖЕЛЕЗО: Оставляем только современные мобильные процессоры.
+        // Это сразу срезает ~10-15 Мб веса библиотек ML Kit и CameraX.
+        ndk {
+            abiFilters "armeabi-v7a", "arm64-v8a"
+        }
+    }
+
+    buildTypes {
+        release {
+            // 2. ВКЛЮЧАЕМ ЧИСТКУ: Удаляет неиспользуемый код из библиотек Google.
+            minifyEnabled true
+
+            // 3. СЖАТИЕ РЕСУРСОВ: Выкидывает лишние иконки и стили из Material Design.
+            shrinkResources true
+
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
+    }
+}
+
+dependencies {
+    // Основные либы (R8 их хорошо "почистит")
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'com.google.android.material:material:1.11.0'
+    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
+
+    // Если Glide не используешь для чего-то сложного — можно удалить
+    implementation 'com.github.bumptech.glide:glide:4.16.0'
+
+    // CameraX (ядро сканера)
+    implementation 'androidx.camera:camera-core:1.3.0'
+    implementation 'androidx.camera:camera-camera2:1.3.0'
+    implementation 'androidx.camera:camera-lifecycle:1.3.0'
+    implementation 'androidx.camera:camera-view:1.3.0'
+
+    // Наш пропуск для Samsung (NanoHTTPD)
+    implementation 'org.nanohttpd:nanohttpd:2.3.1'
+
+    // Автономный ML Kit (всё внутри APK)
+    implementation 'com.google.mlkit:barcode-scanning:17.2.0'
+}

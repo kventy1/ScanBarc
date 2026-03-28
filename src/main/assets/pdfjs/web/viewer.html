@@ -1,0 +1,141 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta id="vmeta" name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Fixed PDF Viewer</title>
+    <style>
+        /* 1. Базовые стили */
+        html, body {
+            margin: 0; padding: 0;
+            background: #1a1a1a;
+            width: 100%; height: 100%;
+            overflow: hidden; /* Скрываем скролл в обычном режиме */
+        }
+
+        #viewer-wrapper {
+            width: 100vw; height: 100vh;
+            display: flex; justify-content: center; align-items: center;
+        }
+
+        canvas {
+            display: block;
+            background: #fff;
+            /* СТАРТ: Растягиваем на весь экран */
+            width: 100vw !important;
+            height: 100vh !important;
+            object-fit: fill;
+            cursor: zoom-in;
+            transition: opacity 0.2s;
+        }
+
+        /* 2. РЕЖИМ ЗУМА (ПОСЛЕ ТАПА) */
+        body.zoomed-mode {
+            overflow: auto !important; /* Включаем прокрутку */
+        }
+
+        body.zoomed-mode #viewer-wrapper {
+            display: block; /* Убираем центрирование для скролла */
+            height: auto; width: auto;
+        }
+
+        body.zoomed-mode canvas {
+            /* МАСШТАБ ПОСЛЕ ТАПА: 250% от ширины экрана */
+            width: 250vw !important;
+            height: auto !important;
+            object-fit: contain; /* Возвращаем пропорции */
+            cursor: zoom-out;
+        }
+
+        #loader {
+            position: fixed; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            color: #fff; font-family: sans-serif; pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+
+<div id="loader">Загрузка...</div>
+<div id="viewer-wrapper">
+    <canvas id="pdf-canvas"></canvas>
+</div>
+
+<script type="module">
+    import * as pdfjsLib from './pdf.mjs';
+    pdfjsLib.GlobalWorkerOptions.workerSrc = './pdf.worker.mjs';
+
+    const canvas = document.getElementById('pdf-canvas');
+    const vMeta = document.getElementById('vmeta');
+    const loader = document.getElementById('loader');
+
+    // Загрузка PDF
+    async function init() {
+        const params = new URLSearchParams(window.location.search);
+        const fileUrl = params.get('file') ? decodeURIComponent(params.get('file')) : 'document.pdf';
+
+        try {
+            const pdf = await pdfjsLib.getDocument(fileUrl).promise;
+            const page = await pdf.getPage(1);
+
+            // scale 3.0 для четкости при щипках
+            const viewport = page.getViewport({ scale: 2.5 });
+            canvas.width = viewport.width;
+            canvas.height = viewport.height;
+
+            const ctx = canvas.getContext('2d', { alpha: false });
+            await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+
+            loader.style.display = 'none';
+        } catch (err) {
+            loader.textContent = 'Ошибка: ' + err.message;
+        }
+    }
+
+    // Логика клика и прицеливания
+   canvas.addEventListener('click', function(e) {
+    const isZoomingIn = !document.body.classList.contains('zoomed-mode');
+
+    if (isZoomingIn) {
+        // 1. Фиксируем точку клика относительно ЭКРАНА (в процентах от 0 до 1)
+        // В режиме 'fill' это самый точный способ поймать прицел
+        const clickX = e.clientX / window.innerWidth;
+        const clickY = e.clientY / window.innerHeight;
+
+        // 2. Активируем режим зума
+        document.body.classList.add('zoomed-mode');
+        vMeta.setAttribute('content', 'width=device-width, initial-scale=1.0, user-scalable=yes');
+
+        // 3. Даем браузеру время "раздуть" страницу и включить скроллбары
+        setTimeout(() => {
+            // Новые физические размеры документа в пикселях
+            const newW = canvas.offsetWidth;
+            const newH = canvas.offsetHeight;
+
+            // Вычисляем координаты: (Размер документа * % клика) - половина экрана (для центра)
+            const targetX = (newW * clickX) - (window.innerWidth / 2);
+            const targetY = (newH * clickY) - (window.innerHeight / 2);
+
+            // Бронебойный скролл: пробуем все варианты
+            const scrollOptions = { left: targetX, top: targetY, behavior: 'instant' };
+            window.scrollTo(scrollOptions);
+            document.documentElement.scrollTo(scrollOptions);
+            document.body.scrollTo(scrollOptions);
+
+            // Если объектный метод не сработал, бьем классикой:
+            window.scrollTo(targetX, targetY);
+        }, 10);
+
+    } else {
+        // Возврат в режим "растянуто"
+        document.body.classList.remove('zoomed-mode');
+        vMeta.setAttribute('content', 'width=device-width, initial-scale=1.0, user-scalable=no');
+        window.scrollTo(0, 0);
+    }
+});
+
+    window.addEventListener('load', init);
+</script>
+
+</body>
+</html>

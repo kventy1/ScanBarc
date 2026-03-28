@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="css/style.css">
+    <title>СКАНЕР</title>
+
+    <link rel="stylesheet" href="css/squares.css">
+    <link rel="stylesheet" href="css/corner-panel.css">
+    <link rel="stylesheet" href="css/drawer.css">
+</head>
+<body>
+<!-- ВЕРХНЯЯ ПАНЕЛЬ -->
+<div class="squares-container">
+    <div class="squares-top" id="squaresTop"></div>
+    <div class="squares-bottom" id="squaresBottom"></div>
+    <div class="squares-left" id="squaresLeft"></div>
+    <div class="squares-right" id="squaresRight"></div>
+</div>
+
+<!-- НОВАЯ ВЕРХНЯЯ ПАНЕЛЬ ДЛЯ ШТРИХ-КОДА -->
+<div class="barcode-panel">
+    <div class="title">ШТРИХ-КОД</div>
+    <style>
+        @font-face {
+            font-family: 'predator';
+            src: url('file:///android_asset/fonts/predator.ttf') format('truetype');
+        }
+
+        #randomLetters {
+         font-family: 'predator', monospace !important;
+         font-weight: bold !important;
+         font-size: 48px; /* или сколько надо */
+}
+ * {
+        /* Запрет выделения текста */
+        -webkit-user-select: none;
+        user-select: none;
+
+        /* Убирает системную синюю подсветку при нажатии (Android/iOS) */
+        -webkit-tap-highlight-color: transparent;
+
+        /* Запрет контекстного меню (копировать/исследовать элемент) */
+        -webkit-touch-callout: none;
+    }
+
+    /* Оставляем рабочими поля ввода, если они есть */
+    input, textarea {
+        -webkit-user-select: text;
+        user-select: text;
+    }
+    </style>
+
+    <div class="barcode-value" id="barcodeValue">
+        <span id="randomLetters"></span>
+    </div>
+        <script>
+        (function() {
+            const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+            const span = document.getElementById('randomLetters');
+
+            function generateRandomWord() {
+                let word = '';
+                const length = Math.floor(Math.random() * 4) + 1
+                for (let i = 0; i < length; i++) {
+                    word += letters[Math.floor(Math.random() * letters.length)];
+                }
+                return word;
+            }
+
+            function updateLetters() {
+                if (document.getElementById('randomLetters')) {
+                    span.style.color = '#ff3333';
+                    span.style.textShadow = '0 0 15px #ff0000, 0 0 30px #ff3333';
+                    span.innerText = generateRandomWord();
+                }
+            }
+
+            setInterval(updateLetters, 1000);
+        })();
+    </script>
+</div>
+
+<!-- НЕОНОВАЯ НАДПИСЬ ДЛЯ СКАНИРОВАНИЯ -->
+<div class="scan-text" onclick="startScan()">
+    <span>PRESS</span>
+    <div class="neon-glow"></div>
+</div>
+
+<button class="neon-button" onclick="openFile()">
+    <div class="circle circle-1"></div>
+    <div class="circle circle-2"></div>
+    <div class="circle circle-3"></div>
+
+    <div class="circle__svg">
+        <svg viewBox="0 0 300 300">
+            <defs>
+                <path id="circlePath" d="M 150, 150 m -100, 0 a 100,100 0 1,1 200,0 a 100,100 0 1,1 -200,0"/>
+            </defs>
+            <text fill="white" font-family="DS Cristal" font-size="4" letter-spacing="6">
+                <textPath xlink:href="#circlePath" startOffset="0%">
+                    ✦   ОТКРЫТЬ   ✦   ОТКРЫТЬ   ✦   ОТКРЫТЬ
+                </textPath>
+            </text>
+        </svg>
+    </div>
+
+    <div class="center-empty"></div>
+</button>
+
+<div class="corner-panel">
+    <div class="title">СТАТИСТИКА</div>
+    <div class="info-line">
+        <span class="label">Сканирований:</span>
+        <span class="value" id="scanCount">0</span>
+    </div>
+    <div class="info-line">
+        <span class="label">Найдено:</span>
+        <span class="value" id="foundCount">0</span>
+        <div class="info-line">
+            <span class="label">Время</span>
+            <span class="value" id="breakTimer">--:--:--</span>
+        </div>
+    </div>
+</div>
+<script src="js/storage.js"></script>
+<script src="js/squares.js"></script>
+<script src="js/corner-panel.js"></script>
+<script src="js/drawer.js"></script>
+<script>
+    // ===== ТАЙМЕР ДО ПЕРЕРЫВА =====
+
+    // ЖЕЛЕЗНО: переменная для пути
+    let lastFilePath = '';
+
+    // ЖЕЛЕЗНО: запуск сканера
+    function startScan() {
+        AndroidScanner.openScanner();
+    }
+
+    // ЖЕЛЕЗНО: обработка результата
+    function onScanResult(barcode, filePath) {
+        lastFilePath = filePath;
+        document.getElementById('barcodeValue').innerText = barcode;
+
+        // ===== СОХРАНЕНИЕ В ИСТОРИЮ =====
+        if (window.saveScan) {
+            window.saveScan(barcode, filePath, !!filePath);
+        } else {
+            setTimeout(() => {
+                if (window.saveScan) window.saveScan(barcode, filePath, !!filePath);
+            }, 100);
+        }
+
+        // ===== ЦВЕТ ТЕКСТА =====
+        const barcodeElement = document.getElementById('barcodeValue');
+        if (filePath && filePath.length > 0) {
+            barcodeElement.style.color = '#00ff00';
+            barcodeElement.style.textShadow = '0 0 15px #00ff00';
+        } else {
+            barcodeElement.style.color = 'white';
+            barcodeElement.style.textShadow = '0 0 15px rgba(0, 255, 255, 0.7)';
+        }
+
+        // ===== АВТООТКРЫТИЕ =====
+        if (window.autoModeEnabled && filePath && filePath.length > 0) {
+            setTimeout(() => {
+                openFile();
+            }, 300);
+        }
+    }
+
+    // ЖЕЛЕЗНО: открытие файла
+    function openFile() {
+        if (lastFilePath) {
+            AndroidScanner.openFile(lastFilePath);
+        }
+    }
+
+    // ОБРАБОТЧИК СООБЩЕНИЙ ОТ IFRAME ИСТОРИИ
+    window.addEventListener('message', function(e) {
+        if (e.data && e.data.type === 'openFile' && e.data.filePath) {
+            // Открываем файл через нативный интерфейс
+            if (typeof AndroidScanner !== 'undefined') {
+                AndroidScanner.openFile(e.data.filePath);
+            }
+        }
+    });
+
+    // Обновляем статистику в уголке при загрузке
+    document.addEventListener('DOMContentLoaded', function() {
+        if (window.updateCornerStats) window.updateCornerStats();
+    });
+
+</script>
+
+</body>
+</html>

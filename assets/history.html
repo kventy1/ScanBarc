@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>История</title>
+    <style>
+        /* Минимальный вариант с оживлением */
+.item:nth-child(n+4) {
+    opacity: 0.35;
+    transition: opacity 0.2s ease;
+}
+
+/* Оживление при прокрутке/скролле - все элементы в зоне видимости становятся яркими */
+.list:active .item:nth-child(n+4),
+.list:focus-within .item:nth-child(n+4),
+.list:hover .item:nth-child(n+4) {
+    opacity: 1;
+}
+
+/* Оживление при касании любого элемента в списке */
+.list:active .item {
+    opacity: 1 !important;
+}
+
+/* Но при этом если просто скроллим пальцем, все в зоне видимости оживают */
+@media (hover: none) {
+    .list {
+        -webkit-overflow-scrolling: touch;
+    }
+
+    /* При скролле (активном касании) все элементы становятся видимыми */
+    .list:active .item:nth-child(n+4) {
+        opacity: 1;
+        transition: opacity 0.05s;
+    }
+}
+        * {
+               /* Запрет выделения текста */
+               -webkit-user-select: none;
+               user-select: none;
+
+               /* Убирает системную синюю подсветку при нажатии (Android/iOS) */
+               -webkit-tap-highlight-color: transparent;
+
+               /* Запрет контекстного меню (копировать/исследовать элемент) */
+               -webkit-touch-callout: none;
+           }
+
+           /* Оставляем рабочими поля ввода, если они есть */
+           input, textarea {
+               -webkit-user-select: text;
+               user-select: text;
+           }
+               * { margin: 0; padding: 0; box-sizing: border-box; }
+               body {
+                   background: #0f172a;
+                   color: white;
+                   font-family: -apple-system, system-ui, sans-serif;
+                   padding: 12px;
+                   height: 100vh;
+                   display: flex;
+                   flex-direction: column;
+               }
+               .header {
+                   display: flex;
+                   justify-content: space-between;
+                   margin-bottom: 15px;
+                   padding-bottom: 10px;
+                   border-bottom: 1px solid #334155;
+               }
+               .stats {
+                   display: flex;
+                   gap: 15px;
+                   font-size: 13px;
+                   color: #94a3b8;
+               }
+               .stats span { color: #60a5fa; font-weight: bold; }
+               .list {
+                   flex: 1;
+                   overflow-y: auto;
+                   display: flex;
+                   flex-direction: column;
+                   gap: 8px;
+               }
+               .item {
+                   background: #1e293b;
+                   border-left: 4px solid;
+                   border-radius: 8px;
+                   padding: 2px;
+                   position: relative;
+               }
+               .item.success { border-color: #10b981; }
+               .item.error { border-color: #ef4444; }
+
+               /* ТРИ ЗОНЫ КЛИКА */
+               .touch-area {
+                   display: flex;
+                   margin-bottom: 8px;
+                   border-radius: 8px;
+                   overflow: hidden;
+                   border: 1px solid #334155;
+                   height: 40px;
+               }
+
+               .touch-zone {
+                   display: flex;
+                   flex-direction: column;
+                   align-items: center;
+                   justify-content: center;
+                   cursor: pointer;
+                   transition: background 0.1s;
+                   padding: 8px 5px;
+
+               }
+
+               .touch-zone:active {
+                   filter: brightness(0.9);
+               }
+
+               /* ЛЕВАЯ ЗОНА - РЕДАКТИРОВАНИЕ (синяя) */
+               .edit-zone {
+                   background: rgba(59, 130, 246, 0.2);
+                   border-right: 1px solid #334155;
+                     flex: 7; /* 70% */
+                     min-width: 0;
+               }
+
+               /* ЦЕНТРАЛЬНАЯ ЗОНА - ОТКРЫТИЕ (зеленая) */
+               .open-zone {
+                   background: rgba(16, 185, 129, 0.2);
+                   border-right: 1px solid #334155;
+               }
+
+               .open-zone.disabled {
+                   background: rgba(100, 116, 139, 0.3);
+                   cursor: not-allowed;
+                   opacity: 0.6;
+                    flex: 2;
+               }
+
+               .open-zone.disabled:active {
+                   filter: none;
+               }
+
+               /* ПРАВАЯ ЗОНА - УДАЛЕНИЕ (красная) */
+               .delete-zone {
+                   background: rgba(239, 68, 68, 0.2);
+               }
+
+               /* Текст в зонах */
+               .touch-zone span {
+                   font-size: 11px;
+                   margin-top: 4px;
+                   font-weight: bold;
+                   text-align: center;
+               }
+
+               .barcode {
+                   font-weight: bold;
+                   color: #c9d8eb;
+                   font-size: 19px;
+                   word-break: break-all;
+                   text-align: center;
+                   letter-spacing: -1px;
+               }
+
+               .time {
+                   font-size: 10px;
+                   color: #94a3b8;
+                   text-align: center;
+               }
+
+               .fields {
+                   display: flex;
+                   flex-wrap: wrap;
+                   gap: 6px;
+                   margin: 6px 0;
+               }
+               .field {
+                   background: #334155;
+                   padding: 2px 8px;
+                   border-radius: 12px;
+                   font-size: 11px;
+               }
+
+               .empty { text-align: center; color: #64748b; padding: 40px; }
+
+               .modal {
+                   position: fixed;
+                   top: 0; left: 0; right: 0; bottom: 0;
+                   background: rgba(0,0,0,0.8);
+                   display: none;
+                   align-items: center;
+                   justify-content: center;
+                   padding: 20px;
+                   z-index: 1000;
+               }
+               .modal-content {
+                   background: #1e293b;
+                   border-radius: 16px;
+                   padding: 20px;
+                   width: 100%;
+                   max-width: 340px;
+               }
+               .modal input {
+                   width: 100%;
+                   padding: 10px;
+                   margin: 8px 0;
+                   background: #334155;
+                   border: 1px solid #475569;
+                   border-radius: 8px;
+                   color: white;
+               }
+               .modal input:focus {
+                   outline: none;
+                   border-color: #60a5fa;
+               }
+               .modal-buttons {
+                   display: flex;
+                   gap: 10px;
+                   margin-top: 15px;
+               }
+               .modal button {
+                   flex: 1;
+                   padding: 10px;
+                   border: none;
+                   border-radius: 8px;
+                   cursor: pointer;
+                   font-weight: 600;
+               }
+               .save { background: #3b82f6; color: white; }
+               .save:hover { background: #2563eb; }
+               .cancel { background: #475569; color: white; }
+               .cancel:hover { background: #64748b; }
+               .modal-barcode {
+                   color: #60a5fa;
+                   font-weight: bold;
+                   margin-bottom: 15px;
+                   word-break: break-all;
+               }
+               .clear-btn {
+           background: rgba(239, 68, 68, 0.2);
+           border: 1px solid rgba(239, 68, 68, 0.3);
+           border-radius: 8px;
+           padding: 6px 12px;
+           color: #ef4444;
+           cursor: pointer;
+           font-size: 12px;
+       }
+
+       .clear-btn:hover {
+           background: rgba(239, 68, 68, 0.3);
+       }
+
+
+    </style>
+</head>
+<body>
+<div class="header">
+    <h3>📋 История</h3>
+    <div class="stats" id="stats">Загрузка...</div>
+    <button class="clear-btn" onclick="clearAllHistory()">🗑️ Очистить</button>
+</div>
+<div class="list" id="list"></div>
+
+<div class="modal" id="modal">
+    <div class="modal-content">
+        <h3 style="margin-bottom: 15px;">✏️ Редактирование</h3>
+        <div class="modal-barcode" id="modalBarcode"></div>
+        <div style="color: #94a3b8; font-size: 15px; margin: 0 0 2px 2px;">Агрегат:</div>
+        <input type="text" id="agregat" placeholder="ВВР-2000" autocomplete="off">
+        <div style="color: #94a3b8; font-size: 14px; margin: 0 0 2px 2px;">Штуков:</div>
+        <input type="text" id="shtukov" placeholder="50 40 100 или 50,89" autocomplete="off" inputmode="numeric">
+        <div style="color: #94a3b8; font-size: 14px; margin: 0 0 2px 2px;">Размер</div>
+        <input type="text" id="size" placeholder="Через тире\минус, 340-120" autocomplete="off" inputmode="numeric">
+        <div style="color: #94a3b8; font-size: 13px; margin: 0 0 2px 2px;">Модель:</div>
+        <input type="text" id="model" placeholder="GSX1300R" autocomplete="off">
+        <div style="color: #94a3b8; font-size: 12px; margin: 0 0 2px 2px;">Цвет:</div>
+        <input type="text" id="color" placeholder="Жопашный RL3000" autocomplete="off">
+        <div class="modal-buttons">
+            <button class="save" onclick="window.saveEdit()">Сохранить</button>
+            <button class="cancel" onclick="window.closeModal()">Отмена</button>
+        </div>
+    </div>
+</div>
+<script src="js/storage.js"></script>
+<script src="js/history.js"></script>
+</body>
+</html>
